@@ -413,8 +413,13 @@ grate_screen_get_shader_param(struct pipe_screen *pscreen,
          return 16;
 
       case PIPE_SHADER_CAP_MAX_CONST_BUFFER0_SIZE:
-      case PIPE_SHADER_CAP_MAX_CONST_BUFFERS:
          return 1024;
+
+      case PIPE_SHADER_CAP_MAX_CONST_BUFFERS:
+         /* No UBO support; just the default constant buffer 0.
+          * Must be <= PIPE_MAX_CONSTANT_BUFFERS (32) or
+          * cso_unbind_context() asserts at teardown. */
+         return 1;
 
       case PIPE_SHADER_CAP_MAX_TEMPS:
          return 64 * 4; /* 64 vec4s */
@@ -493,8 +498,13 @@ grate_screen_get_shader_param(struct pipe_screen *pscreen,
          return 16;
 
       case PIPE_SHADER_CAP_MAX_CONST_BUFFER0_SIZE:
-      case PIPE_SHADER_CAP_MAX_CONST_BUFFERS:
          return 32;
+
+      case PIPE_SHADER_CAP_MAX_CONST_BUFFERS:
+         /* No UBO support; just the default constant buffer 0.
+          * Must be <= PIPE_MAX_CONSTANT_BUFFERS (32) or
+          * cso_unbind_context() asserts at teardown. */
+         return 1;
 
       case PIPE_SHADER_CAP_MAX_TEMPS:
          return 16; /* scalars */
