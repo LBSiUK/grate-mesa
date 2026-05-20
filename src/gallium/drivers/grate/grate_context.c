@@ -98,6 +98,17 @@ grate_screen_context_create(struct pipe_screen *pscreen,
    context->base.screen = pscreen;
    context->base.priv = priv;
 
+   /*
+    * Seed no_scissor with a valid full-range SCISSOR command. emit_scissor()
+    * runs on every draw and must never push a zero word: the kernel cmdstream
+    * validator decodes 0x00000000 as a SETCLASS opcode with class id 0 and
+    * rejects the whole job ("invalid class id 0x0"). grate_set_framebuffer_state()
+    * overwrites this with the real framebuffer dimensions once it runs.
+    */
+   context->no_scissor[0] = host1x_opcode_incr(TGR3D_SCISSOR_HORIZ, 2);
+   context->no_scissor[1] = 0x0000ffff; /* SCISSOR_HORIZ: min 0, max 0xffff */
+   context->no_scissor[2] = 0x0000ffff; /* SCISSOR_VERT:  min 0, max 0xffff */
+
    context->primconvert = util_primconvert_create(&context->base,
                                                   (1 << PIPE_PRIM_QUADS) - 1);
 
