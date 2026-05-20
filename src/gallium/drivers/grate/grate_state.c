@@ -46,6 +46,11 @@ grate_set_framebuffer_state(struct pipe_context *pcontext,
    unsigned int i;
    uint32_t mask = 0;
 
+   if (grate_debug & GRATE_DEBUG_DRAW)
+      fprintf(stderr, "GRATE-DBG: set_framebuffer_state nr_cbufs=%u zsbuf=%p w=%u h=%u\n",
+              framebuffer->nr_cbufs, (void *)framebuffer->zsbuf,
+              framebuffer->width, framebuffer->height);
+
    if (framebuffer->zsbuf) {
       struct grate_resource *res = grate_resource(framebuffer->zsbuf->texture);
       uint32_t rt_params;
@@ -563,6 +568,10 @@ emit_render_targets(struct grate_context *context)
    unsigned int i;
    struct grate_stream *stream = &context->gr3d->stream;
    const struct grate_framebuffer_state *fb = &context->framebuffer;
+
+   if (grate_debug & GRATE_DEBUG_DRAW)
+      fprintf(stderr, "GRATE-DBG: emit_render_targets num_rts=%d mask=0x%x\n",
+              fb->num_rts, fb->mask);
 
    grate_stream_push(stream, host1x_opcode_incr(TGR3D_RT_PARAMS(0), fb->num_rts));
    for (i = 0; i < fb->num_rts; ++i) {

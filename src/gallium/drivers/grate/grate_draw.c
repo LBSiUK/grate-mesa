@@ -303,6 +303,12 @@ grate_draw_vbo(struct pipe_context *pcontext,
    if (!indirect && (!draws[0].count || !info->instance_count))
       return;
 
+   if (grate_debug & GRATE_DEBUG_DRAW)
+      fprintf(stderr, "GRATE-DBG: draw_vbo fb w=%u h=%u nr_cbufs=%u zsbuf=%p mode=%u count=%u\n",
+              context->framebuffer.base.width, context->framebuffer.base.height,
+              context->framebuffer.base.nr_cbufs, (void *)context->framebuffer.base.zsbuf,
+              info->mode, draws[0].count);
+
    if (info->mode >= PIPE_PRIM_QUADS) {
       // the HW can handle non-trimmed sizes, but pimconvert can't
       if (!u_trim_pipe_prim(info->mode, (unsigned*)&draws[0].count))

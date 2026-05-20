@@ -178,6 +178,11 @@ grate_screen_resource_create(struct pipe_screen *pscreen,
    pipe_reference_init(&resource->b.reference, 1);
    resource->b.screen = pscreen;
 
+   if (grate_debug & GRATE_DEBUG_DRAW)
+      fprintf(stderr, "GRATE-DBG: resource_create target=%d %ux%u fmt=%d bind=0x%x\n",
+              template->target, template->width0, template->height0,
+              template->format, template->bind);
+
    resource->pitch = template->width0 * util_format_get_blocksize(template->format);
    height = template->height0;
 

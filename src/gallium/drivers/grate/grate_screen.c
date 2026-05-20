@@ -17,6 +17,8 @@ static const struct debug_named_value debug_options[] = {
      "Print unimplemented functions" },
    { "tgsi", GRATE_DEBUG_TGSI,
      "Dump TGSI during program compile" },
+   { "draw", GRATE_DEBUG_DRAW,
+     "Trace draws, framebuffer state and resource creation" },
    { NULL }
 };
 
