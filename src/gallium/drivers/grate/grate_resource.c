@@ -53,6 +53,15 @@ grate_resource_get_handle(struct pipe_screen *pscreen,
          fprintf(stderr, "drm_tegra_bo_get_handle() failed: %d\n", err);
          return FALSE;
       }
+   } else if (handle->type == WINSYS_HANDLE_TYPE_FD) {
+      /* dma-buf (PRIME) FD export — required by the DRI3 loader, which
+       * exports each window buffer as an FD to hand to the X server.
+       */
+      err = drm_tegra_bo_to_dmabuf(resource->bo, &handle->handle);
+      if (err < 0) {
+         fprintf(stderr, "drm_tegra_bo_to_dmabuf() failed: %d\n", err);
+         return FALSE;
+      }
    } else {
       fprintf(stdout, "unsupported handle type: %d\n", handle->type);
       return FALSE;
