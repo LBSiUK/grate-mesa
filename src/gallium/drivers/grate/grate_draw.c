@@ -377,21 +377,59 @@ grate_draw_vbo(struct pipe_context *pcontext,
       return;
    }
 
-   /* draw params */
-   value  = TGR3D_VAL(DRAW_PARAMS, INDEX_MODE, index_size);
-   value |= context->rast->draw_params;
-   value |= TGR3D_VAL(DRAW_PARAMS, PRIMITIVE_TYPE, grate_primitive_type(info->mode));
-   value |= TGR3D_VAL(DRAW_PARAMS, FIRST, draws->start);
-   value |= 0xC0000000; /* flush input caches? */
+   /*
+    * DRAW_PRIMITIVES.INDEX_COUNT is a 12-bit field holding (count - 1),
+    * so one draw packet covers at most 4096 vertices. Split larger draws
+    * into several packets: strip primitives need the chunks to overlap
+    * on their shared vertices, list primitives just need each chunk to
+    * hold a whole number of primitives. (count > 0 is guaranteed above.)
+    */
+   unsigned prim_align, prim_overlap, drawn = 0;
 
-   grate_stream_push(stream, host1x_opcode_incr(TGR3D_DRAW_PARAMS, 1));
-   grate_stream_push(stream, value);
+   switch (info->mode) {
+   case PIPE_PRIM_POINTS:         prim_align = 1; prim_overlap = 0; break;
+   case PIPE_PRIM_LINES:          prim_align = 2; prim_overlap = 0; break;
+   case PIPE_PRIM_LINE_STRIP:     prim_align = 1; prim_overlap = 1; break;
+   case PIPE_PRIM_TRIANGLES:      prim_align = 3; prim_overlap = 0; break;
+   case PIPE_PRIM_TRIANGLE_STRIP: prim_align = 2; prim_overlap = 2; break;
+   default: /* LINE_LOOP / TRIANGLE_FAN share a vertex, can't range-split */
+      prim_align = 0; prim_overlap = 0; break;
+   }
 
-   assert(draws->count > 0 && draws->count < (1 << 11));
-   value  = TGR3D_VAL(DRAW_PRIMITIVES, INDEX_COUNT, draws->count - 1);
-   value |= TGR3D_VAL(DRAW_PRIMITIVES, OFFSET, offset);
-   grate_stream_push(stream, host1x_opcode_incr(TGR3D_DRAW_PRIMITIVES, 1));
-   grate_stream_push(stream, value);
+   do {
+      unsigned chunk = draws->count - drawn;
+
+      if (chunk > 4096) {
+         chunk = 4096;
+         if (prim_align > 1)
+            chunk -= (chunk - prim_overlap) % prim_align;
+         if (prim_align == 0)
+            fprintf(stderr, "grate_draw_vbo: %u-vertex draw (mode %u) "
+                    "exceeds the 4096-vertex limit and cannot be split; "
+                    "clamping\n", draws->count, info->mode);
+      }
+
+      /* draw params */
+      value  = TGR3D_VAL(DRAW_PARAMS, INDEX_MODE, index_size);
+      value |= context->rast->draw_params;
+      value |= TGR3D_VAL(DRAW_PARAMS, PRIMITIVE_TYPE,
+                         grate_primitive_type(info->mode));
+      value |= TGR3D_VAL(DRAW_PARAMS, FIRST,
+                         info->index_size > 0 ? draws->start : offset + drawn);
+      value |= 0xC0000000; /* flush input caches? */
+
+      grate_stream_push(stream, host1x_opcode_incr(TGR3D_DRAW_PARAMS, 1));
+      grate_stream_push(stream, value);
+
+      value  = TGR3D_VAL(DRAW_PRIMITIVES, INDEX_COUNT, chunk - 1);
+      value |= TGR3D_VAL(DRAW_PRIMITIVES, OFFSET, offset + drawn);
+      grate_stream_push(stream, host1x_opcode_incr(TGR3D_DRAW_PRIMITIVES, 1));
+      grate_stream_push(stream, value);
+
+      if (drawn + chunk >= draws->count || prim_align == 0)
+         break;
+      drawn += chunk - prim_overlap;
+   } while (1);
 
    grate_stream_end(stream);
 
