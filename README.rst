@@ -1,3 +1,19 @@
+.. note::
+
+   **Fork notice.** This is a fork of grate-driver/mesa, used to bring up
+   hardware GL on the Microsoft Surface RT (Tegra 3) under postmarketOS.
+   The work is on the ``grate-22.2.4`` branch: it seeds ``no_scissor`` at
+   context creation (an uninitialised value made the kernel reject command
+   streams), exports buffers as dma-buf FDs in ``grate_resource_get_handle``
+   (without it the framebuffer was empty), splits draws above the 4096-vertex
+   limit, caps ``MAX_CONST_BUFFERS`` at 1, fixes ``drm_tegra_bo_from_dmabuf``,
+   and adds ``GRATE_DEBUG=draw`` tracing. Result: ``es2tri`` and ``es2gears``
+   render on the GR3D (about 60 fps for ``es2gears``) under the modesetting
+   X driver. This fork is no longer developed: active work continues at
+   https://codeberg.org/libre-tegra/mesa (branch ``grate-wip``), which moved to
+   the mainline tegra-drm API. Tooling and write-up:
+   https://github.com/LBSiUK/SurfaceRT-GPU-Driver
+
 `Mesa <https://mesa3d.org>`_ - The 3D Graphics Library
 ======================================================
 
